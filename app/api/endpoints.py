@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 from typing import List
 from pathlib import Path
-from app.agents.base import BaseAgent
+from app.agents.base import BaseAgent, DocumentType
 from app.core.document_processor import DocumentProcessor
 import tempfile
 
@@ -35,6 +35,9 @@ async def process_documents(files: List[UploadFile], contents: List[bytes]) -> d
     
     results = []
     temp_files = []
+    bill_text = None
+    discharge_text = None
+    
     try:
         # Save files to disk
         for file, content in zip(files, contents):
@@ -52,8 +55,16 @@ async def process_documents(files: List[UploadFile], contents: List[bytes]) -> d
         # Process files
         for file, temp_path in zip(files, temp_files):
             try:
-                doc_type = await agent.classify_document(await agent.extract_text_from_pdf(temp_path))
-                info = await agent.extract_info(await agent.extract_text_from_pdf(temp_path), doc_type)
+                text = await agent.extract_text_from_pdf(temp_path)
+                doc_type = await agent.classify_document(text)
+                info = await agent.extract_info(text, DocumentType(doc_type))
+                
+                # Store text for validation
+                if doc_type == "bill":
+                    bill_text = text
+                elif doc_type == "discharge":
+                    discharge_text = text
+                
                 results.append({
                     "type": doc_type,
                     "filename": file.filename,
@@ -62,9 +73,12 @@ async def process_documents(files: List[UploadFile], contents: List[bytes]) -> d
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))
             
+        # Validate documents
+        validation = await agent.validate_documents(bill_text or "", discharge_text or "")
+            
         return {
             "documents": results,
-            "validation": {"is_valid": True}  # Simplified validation for now
+            "validation": validation
         }
     finally:
         # Clean up temp files

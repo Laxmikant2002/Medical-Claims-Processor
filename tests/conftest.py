@@ -7,6 +7,7 @@ from pathlib import Path
 from app.api.endpoints import app
 from app.agents.base import BaseAgent
 from .test_utils import create_test_pdf, MOCK_BILL_CONTENT, MOCK_DISCHARGE_CONTENT
+from dotenv import load_dotenv
 
 @pytest.fixture
 def test_client():
@@ -94,3 +95,15 @@ def mock_gemini_response():
         def __init__(self, text):
             self.text = text
     return lambda text: MockResponse(text)
+
+def pytest_configure(config):
+    """Configure test environment."""
+    # Load environment variables from .env.test if it exists
+    load_dotenv(".env.test", override=True)
+    
+    # Set test environment variables
+    os.environ.setdefault("GOOGLE_API_KEY", "test_api_key")
+    os.environ.setdefault("REDIS_URL", "redis://localhost:6379")
+    os.environ.setdefault("USE_REDIS_CLOUD", "False")
+    os.environ.setdefault("VECTOR_DIMENSION", "768")
+    os.environ.setdefault("VECTOR_SIMILARITY_METRIC", "COSINE")

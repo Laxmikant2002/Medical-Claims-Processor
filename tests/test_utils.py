@@ -1,40 +1,45 @@
+import tempfile
+from pathlib import Path
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 import io
 
-MOCK_BILL_CONTENT = """MEDICAL BILL
-Hospital: General Medical Center
-Patient Name: John Smith
-Date of Service: 2024-03-15
-Total Amount: $1,000.00
-Insurance Provider: Health Plus
-Policy Number: HP123456789
+MOCK_BILL_CONTENT = """
+MEDICAL BILL
+
+Patient Name: John Doe
+Service Date: 2024-03-15
+Total Amount: $1,500.00
+
+Services:
+1. Consultation - $200
+2. X-Ray - $300
+3. Laboratory Tests - $1,000
 """
 
-MOCK_DISCHARGE_CONTENT = """DISCHARGE SUMMARY
-Hospital: General Medical Center
-Patient Name: John Smith
-Admission Date: 2024-03-12
-Discharge Date: 2024-03-15
-Diagnosis: Acute Bronchitis
-Treatment Summary: Antibiotic therapy, IV Fluids, Bronchodilators
-Follow Up: Follow up with primary care in 1 week
+MOCK_DISCHARGE_CONTENT = """
+DISCHARGE SUMMARY
+
+Patient: John Doe
+Admission Date: 2024-03-14
+Discharge Date: 2024-03-16
+
+Diagnosis:
+- Acute bronchitis
+- Mild dehydration
+
+Treatment:
+- Antibiotics
+- IV Fluids
 """
 
-def create_test_pdf(content: str) -> bytes:
+def create_test_pdf(content: str) -> str:
     """Create a test PDF file with the given content."""
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    y = 750  # Starting y position
-    
-    # Split content into lines and write each line
-    for line in content.split('\n'):
-        if line.strip():
-            c.drawString(72, y, line)
-            y -= 20  # Move down 20 points
-            
-    c.save()
-    return buffer.getvalue()
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
+        # Create a simple PDF file with the content
+        pdf_content = f"%PDF-1.4\n{content}\n%%EOF"
+        temp_file.write(pdf_content.encode())
+        return temp_file.name
 
 def create_test_files(output_dir):
     """Create test PDF files in the specified directory."""

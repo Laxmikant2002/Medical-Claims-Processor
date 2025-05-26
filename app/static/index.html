@@ -4,32 +4,176 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medical Claims Processor</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <h1>Medical Claims Processor</h1>
-        
-        <div class="dropzone" id="dropzone">
-            <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
-            <div class="dropzone-content">
-                <p>Drag and drop PDF files here</p>
-                <p>or</p>
-                <button id="browseBtn">Browse Files</button>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Medical Claims Processor</h1>
+            <p class="text-gray-600">Upload your medical documents for automated processing</p>
+        </header>
+
+        <div class="max-w-2xl mx-auto">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <div class="upload-zone border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-6">
+                    <form id="uploadForm" class="space-y-4">
+                        <div class="space-y-2">
+                            <label for="fileInput" class="block text-gray-700 font-medium">
+                                Select PDF Documents
+                            </label>
+                            <input type="file" 
+                                   id="fileInput" 
+                                   name="files" 
+                                   multiple 
+                                   accept=".pdf"
+                                   class="hidden" 
+                                   required>
+                            <div class="flex flex-col items-center space-y-2">
+                                <button type="button" 
+                                        onclick="document.getElementById('fileInput').click()"
+                                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                                    Choose Files
+                                </button>
+                                <p class="text-sm text-gray-500">or drag and drop files here</p>
+                            </div>
+                        </div>
+                        <div id="fileList" class="text-left space-y-2"></div>
+                        <button type="submit" 
+                                class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                            Process Documents
+                        </button>
+                    </form>
+                </div>
+
+                <div id="results" class="hidden space-y-4">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Processing Results</h2>
+                    <div id="resultsContent" class="space-y-4"></div>
+                </div>
             </div>
         </div>
-
-        <div id="fileList" class="file-list"></div>
-        
-        <button id="processBtn" class="process-btn" disabled>Process Claims</button>
-        
-        <div id="results" class="results"></div>
     </div>
-    
-    <div id="toast" class="toast"></div>
 
-    <script src="/static/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadForm = document.getElementById('uploadForm');
+            const fileInput = document.getElementById('fileInput');
+            const fileList = document.getElementById('fileList');
+            const results = document.getElementById('results');
+            const resultsContent = document.getElementById('resultsContent');
+
+            // Handle file selection
+            fileInput.addEventListener('change', function() {
+                fileList.innerHTML = '';
+                Array.from(this.files).forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'flex items-center space-x-2 text-sm text-gray-600';
+                    fileItem.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>${file.name}</span>
+                    `;
+                    fileList.appendChild(fileItem);
+                });
+            });
+
+            // Handle form submission
+            uploadForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData();
+                Array.from(fileInput.files).forEach(file => {
+                    formData.append('files', file);
+                });
+
+                try {
+                    const response = await fetch('/process-documents', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    
+                    // Display results
+                    results.classList.remove('hidden');
+                    resultsContent.innerHTML = `
+                        <div class="bg-gray-50 rounded p-4">
+                            <h3 class="font-medium text-gray-800 mb-2">Documents Processed:</h3>
+                            <ul class="list-disc list-inside space-y-1">
+                                ${data.documents.map(doc => `
+                                    <li class="text-gray-600">
+                                        ${doc.filename} (${doc.type})
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        <div class="bg-gray-50 rounded p-4">
+                            <h3 class="font-medium text-gray-800 mb-2">Validation Results:</h3>
+                            <div class="space-y-2">
+                                <p class="text-${data.validation.is_valid ? 'green' : 'red'}-600">
+                                    Status: ${data.validation.is_valid ? 'Valid' : 'Invalid'}
+                                </p>
+                                ${data.validation.discrepancies.length > 0 ? `
+                                    <div class="text-red-600">
+                                        <p class="font-medium">Discrepancies:</p>
+                                        <ul class="list-disc list-inside">
+                                            ${data.validation.discrepancies.map(d => `
+                                                <li>${d}</li>
+                                            `).join('')}
+                                        </ul>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                } catch (error) {
+                    results.classList.remove('hidden');
+                    resultsContent.innerHTML = `
+                        <div class="bg-red-50 text-red-600 p-4 rounded">
+                            Error processing documents: ${error.message}
+                        </div>
+                    `;
+                }
+            });
+
+            // Handle drag and drop
+            const uploadZone = document.querySelector('.upload-zone');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                uploadZone.classList.add('border-blue-500');
+            }
+
+            function unhighlight(e) {
+                uploadZone.classList.remove('border-blue-500');
+            }
+
+            uploadZone.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                fileInput.files = files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+    </script>
 </body>
 </html> 
