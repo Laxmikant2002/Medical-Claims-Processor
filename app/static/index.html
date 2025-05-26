@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Claims Processor</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Medical Claims Processor</h1>
+        
+        <div class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
+            <div class="dropzone-content">
+                <p>Drag and drop PDF files here</p>
+                <p>or</p>
+                <button id="browseBtn">Browse Files</button>
+            </div>
+        </div>
+
+        <div id="fileList" class="file-list"></div>
+        
+        <button id="processBtn" class="process-btn" disabled>Process Claims</button>
+        
+        <div id="results" class="results"></div>
+    </div>
+    
+    <div id="toast" class="toast"></div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html> 
