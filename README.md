@@ -2,206 +2,146 @@
 
 A modern web application for processing and validating medical claims documents using AI-powered document analysis.
 
-## Features
-
-- 🚀 Modern drag-and-drop interface for file uploads
-- 📄 PDF text extraction with OCR support
-- 🤖 AI-powered document classification and information extraction
-- ✅ Comprehensive validation rules
-- 📊 Detailed processing results
-- 🎯 Cross-document consistency checks
-- 📱 Responsive design for all devices
-
-## Architecture
+## Architecture Overview
 
 ### Tech Stack
 - **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
 - **Backend**: FastAPI (Python 3.9+)
 - **AI/ML**: Google Gemini Pro
 - **Document Processing**: PyPDF2, Tesseract OCR
-- **Testing**: pytest, pytest-asyncio
+- **Database**: PostgreSQL
+- **Caching**: Redis
 
-### Component Overview
+### System Components
+1. **Document Processing Pipeline**:
+   - PDF text extraction using PyPDF2 and Tesseract OCR.
+   - Document classification and information extraction using Google Gemini Pro.
+2. **Agent Orchestration**:
+   - ClaimProcessorAgent for document classification and embedding storage.
+   - ValidationAgent for cross-document validation.
+3. **API Endpoints**:
+   - `POST /process-claim`: Processes uploaded documents.
 
-1. **Document Processing Pipeline**
-   - PDF text extraction (PyPDF2 + Tesseract OCR)
-   - Document classification (Gemini AI)
-   - Information extraction (Gemini AI)
-   - Validation and cross-checking
+## AI Tools Integration
 
-2. **Agent Architecture**
-   - Base agent with common functionality
-   - Document-specific processing logic
-   - Validation rules engine
-   - Error handling and logging
+### Tools Used
+1. **Google Gemini Pro**:
+   - Document classification and analysis.
+   - Information extraction from medical documents.
+   - Cross-document validation support.
+2. **Vector Store (Weaviate)**:
+   - Document embeddings storage.
+   - Semantic search capabilities.
 
-3. **API Endpoints**
-   - `GET /`: Serves the web interface
-   - `POST /process-claim`: Processes uploaded documents
-   - Static file serving for UI assets
+### Prompt Examples
+#### Document Classification Prompt
+```python
+prompt = """Analyze this medical document and classify it into one of these categories:
+- Medical Bill
+- Discharge Summary
+- Insurance Claim
+- Lab Report
+- Prescription
 
-4. **Validation System**
-   - Patient information consistency
-   - Date sequence validation
-   - Provider information matching
-   - Insurance details verification
-   - Amount and charges validation
+Document text:
+{document_text}
+
+Return only the category name."""
+```
+
+#### Information Extraction Prompt
+```python
+prompt = """Extract the following information from this medical document:
+- Patient Name
+- Date of Service
+- Total Amount
+- Provider Details
+- Insurance ID
+
+Document text:
+{document_text}
+
+Return the information in JSON format."""
+```
+
+#### Validation Prompt
+```python
+prompt = """Compare these two medical documents for consistency:
+Document 1: {doc1_text}
+Document 2: {doc2_text}
+
+Check for:
+1. Matching patient information
+2. Date consistency
+3. Provider details match
+4. Amount accuracy
+
+Return discrepancies in JSON format."""
+```
 
 ## Setup Instructions
 
-1. **Prerequisites**
+### Prerequisites
+- Install Tesseract OCR:
+  ```bash
+  # Windows
+  winget install --id=Google.Tesseract-OCR  -e
+
+  # Linux
+  sudo apt-get install tesseract-ocr
+
+  # macOS
+  brew install tesseract
+  ```
+
+### Environment Setup
+1. Create and activate a virtual environment:
    ```bash
-   # Windows
-   winget install --id=Google.Tesseract-OCR  -e
-
-   # Linux
-   sudo apt-get install tesseract-ocr
-
-   # macOS
-   brew install tesseract
-   ```
-
-2. **Environment Setup**
-   ```bash
-   # Create virtual environment
    python -m venv venv
-   
-   # Activate virtual environment
    # Windows
    .\venv\Scripts\activate
    # Linux/macOS
    source venv/bin/activate
-   
-   # Install dependencies
+   ```
+2. Install dependencies:
+   ```bash
    pip install -r requirements.txt
    ```
-
-3. **Configuration**
-   Create a `.env` file in the project root:
+3. Create a `.env` file:
    ```env
    GOOGLE_API_KEY=your_api_key_here
    DEBUG=True
    ```
 
-4. **Running the Application**
-   ```bash
-   uvicorn main:app --reload
-   ```
-   Access the application at http://localhost:8000
-
-## API Documentation
-
-### POST /process-claim
-Process medical claim documents.
-
-**Request**:
-- Method: POST
-- Content-Type: multipart/form-data
-- Body: List of PDF files
-
-**Response**:
-```json
-{
-  "documents": [
-    {
-      "type": "bill",
-      "filename": "medical_bill.pdf",
-      "data": {
-        "Total Amount": 1500.00,
-        "Service Date": "2024-03-15",
-        "Provider Name": "Example Hospital",
-        ...
-      }
-    },
-    {
-      "type": "discharge",
-      "filename": "discharge_summary.pdf",
-      "data": {
-        "Discharge Date": "2024-03-16",
-        "Patient Name": "John Doe",
-        ...
-      }
-    }
-  ],
-  "validation": {
-    "is_valid": true,
-    "missing_documents": [],
-    "discrepancies": [],
-    "warnings": [],
-    "validation_details": {
-      "patient_info": {...},
-      "dates": {...},
-      "provider_info": {...},
-      "insurance_info": {...},
-      "amounts": {...}
-    }
-  }
-}
-```
-
-## Validation Rules
-
-1. **Patient Information**
-   - Name matching across documents
-   - Patient ID consistency
-   - Insurance information presence
-
-2. **Dates**
-   - Service date within admission period
-   - Admission before discharge
-   - Date format validation
-
-3. **Provider Information**
-   - Provider name matching
-   - Address verification
-   - Facility consistency
-
-4. **Financial Information**
-   - Total amount validation
-   - Itemized charges sum
-   - Payment status verification
-
-## Error Handling
-
-The application implements comprehensive error handling:
-- PDF processing errors
-- OCR failures
-- AI model errors
-- Validation failures
-- File format issues
-
-## Testing
-
-Run the test suite:
+### Running the Application
 ```bash
-pytest
+uvicorn main:app --reload
 ```
+Access the application at [http://localhost:8000](http://localhost:8000).
 
-## Limitations and Future Improvements
+## Bonus Features
 
-1. **Current Limitations**
-   - PDF-only support
-   - English language documents
-   - Single-page processing
-   - Basic OCR capabilities
+### Docker Support
+- **Dockerfile** for containerization:
+  ```dockerfile
+  FROM python:3.9-slim
 
-2. **Planned Improvements**
-   - Support for more document formats
-   - Multi-language support
-   - Advanced OCR with layout analysis
-   - Machine learning for improved accuracy
-   - Real-time processing status
-   - Document storage integration
-   - Batch processing capabilities
+  WORKDIR /app
+  COPY requirements.txt .
+  RUN pip install -r requirements.txt
 
-## Contributing
+  COPY . .
+  CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+  ```
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+### Redis Integration
+- **Caching and Queue Management**:
+  ```bash
+  docker run -d --name redis-stack -p 6379:6379 redis/redis-stack:latest
+  ```
 
-## License
-
-MIT License - see LICENSE file for details 
+### PostgreSQL Setup
+- **Database for Claims Storage**:
+  ```bash
+  docker run -d --name postgres -e POSTGRES_PASSWORD=password -p 5432:5432 postgres:latest
+  ```
